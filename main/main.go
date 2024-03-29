@@ -1,12 +1,12 @@
 package main
 
 import (
-	"aoc/day1"
+	"aoc/day2"
 	"fmt"
 )
 
 func main() {
-	res := day1.Day1()
+	res := day2.Day2()
 
 	fmt.Printf("Result: %v", res)
 }
