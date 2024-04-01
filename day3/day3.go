@@ -8,7 +8,8 @@ import (
 )
 
 func Day3() int {
-	return findAdjacentPartNums("../day3/input.txt")
+	//return findAdjacentPartNums("../day3/input.txt")
+	return findGearRatios("../day3/input.txt")
 }
 
 type PartNumber struct {
@@ -19,8 +20,9 @@ type PartNumber struct {
 }
 
 type CharCoords struct {
-	x int
-	y int
+	x    int
+	y    int
+	char rune
 }
 
 func findAdjacentPartNums(path string) int {
@@ -59,10 +61,6 @@ func findAdjacentPartNums(path string) int {
 				for x := char.x - 1; x <= char.x+1; x++ {
 					for i := range partsNumbersLength {
 						partNumber := &((*partsNumbers)[i])
-						if partNumber.number == 34 {
-							fmt.Println("Checking 34")
-						}
-
 						if x >= partNumber.start && x <= partNumber.end {
 							partNumber.marked = true
 						}
@@ -86,6 +84,76 @@ func findAdjacentPartNums(path string) int {
 	return sum
 }
 
+func findGearRatios(path string) int {
+	file, err := os.Open(path)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+
+	lineCount := 0
+	var numberRanges [][]PartNumber
+	var charsList []CharCoords
+
+	//Parse the data
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		ranges, charsFound := parseLine(line, lineCount)
+
+		numberRanges = append(numberRanges, ranges)
+		charsList = append(charsList, charsFound...)
+
+		lineCount += 1
+	}
+
+	gearRatioSum := 0
+
+	//Count neighbors of every '*' and calc gear ratio
+	for _, char := range charsList {
+		if char.char == '*' {
+			var neighbors = make([]*PartNumber, 0)
+			for y := char.y - 1; y <= char.y+1; y++ {
+				//In bounds check
+				if y >= 0 && y < lineCount {
+					partsNumbers := &numberRanges[y]
+					partsNumbersLength := len(numberRanges[y])
+					for x := char.x - 1; x <= char.x+1; x++ {
+						for i := range partsNumbersLength {
+							partNumber := &((*partsNumbers)[i])
+							if x >= partNumber.start && x <= partNumber.end {
+
+								//since Go doesn't have a set we check manually
+								alreadyPresent := false
+								for _, neighbor := range neighbors {
+									if neighbor == partNumber {
+										alreadyPresent = true
+									}
+								}
+
+								if !alreadyPresent {
+									neighbors = append(neighbors, partNumber)
+								}
+
+							}
+						}
+					}
+				}
+			}
+
+			if len(neighbors) == 2 {
+				gearRatio := (*neighbors[0]).number * (*neighbors[1]).number
+				gearRatioSum += gearRatio
+			}
+		}
+	}
+
+	return gearRatioSum
+}
+
 func parseLine(line string, currentY int) ([](PartNumber), []CharCoords) {
 	number := 0
 	numberStart := -1
@@ -103,7 +171,7 @@ func parseLine(line string, currentY int) ([](PartNumber), []CharCoords) {
 			}
 		} else {
 			if char != '.' {
-				charCoords := &CharCoords{i, currentY}
+				charCoords := &CharCoords{i, currentY, char}
 				charsList = append(charsList, *charCoords)
 			}
 			if numberStart != -1 {
